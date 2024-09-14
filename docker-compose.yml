@@ -1,25 +1,39 @@
+
 services:
-  mysql:
-    image: mysql:8.4
+  server:
+    build:
+      context: .
+      target: development
     ports:
-      - "3306:3306"
+      - 8080:8080
+      - 8000:8000
+    depends_on:
+       db:
+         condition: service_healthy
     environment:
-      - MYSQL_ROOT_PASSWORD=
-      - MYSQL_ALLOW_EMPTY_PASSWORD=true
-      - MYSQL_USER=petclinic
-      - MYSQL_PASSWORD=petclinic
-      - MYSQL_DATABASE=petclinic
-    volumes:
-      - "./conf.d:/etc/mysql/conf.d:ro"
-    profiles:
-      - mysql
-  postgres:
-    image: postgres:16.3
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_PASSWORD=petclinic
-      - POSTGRES_USER=petclinic
-      - POSTGRES_DB=petclinic
-    profiles:
-      - postgres
+      - MYSQL_URL=jdbc:mysql://db:3306/petclinic
+    develop:
+      watch:
+        - action: rebuild
+          path: .
+  db:
+     image: mysql
+     restart: always
+     volumes:
+       - mysql-db-data:/var/lib/mysql
+     environment:
+       - MYSQL_ROOT_PASSWORD=admin123
+       - MYSQL_DATABASE=petclinic
+       - MYSQL_USER=petclinic
+       - MYSQL_PASSWORD=petclinic
+     expose:
+       - 3306
+     healthcheck:
+       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "petclinic", "--password=petclinic"]
+       interval: 10s
+       timeout: 5s
+       retries: 5
+volumes:
+   mysql-db-data:
+
+
